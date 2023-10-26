@@ -6,6 +6,12 @@ var app = (function () {
             this.y=y;
         }        
     }
+
+    class Sketch{
+        constructor(points){
+            this.points = points;
+        }
+    }
     
     var stompClient = null;
 
@@ -38,11 +44,35 @@ var app = (function () {
             console.log('Connected: ' + frame);
             stompClient.subscribe('/topic' + topic, function (eventbody) {
                 var pt = JSON.parse(eventbody.body);
-                addPointToCanvas(pt);
+
+                if(topic.includes("newpoint")){
+                    addPointToCanvas(pt);
+                }else{
+                    var sketch = new Sketch(pt);
+                    drawNewSketch(sketch);
+                }
+                
             });
         });
 
     };
+
+    var drawNewSketch = function (sketch){
+        var can = document.getElementById('canvas');
+        var ctx = can.getContext('2d');
+        ctx.beginPath();
+        ctx.fillStyle = "#8A2BE2";
+        for(var i = 1; i < 5; i++){
+            if(i==1){
+                ctx.moveTo(sketch.points[sketch.points.length - i].x, sketch.points[sketch.points.length - i].y);
+            }else{
+                ctx.lineTo(sketch.points[sketch.points.length - i].x, sketch.points[sketch.points.length - i].y);
+            }
+            
+        }
+        ctx.closePath();
+        ctx.fill();
+    }
     
     
 
@@ -54,7 +84,7 @@ var app = (function () {
                 can.addEventListener("pointerdown", function(event){
                     var pt = getMousePosition(event);
                     addPointToCanvas(pt);
-                    stompClient.send("/topic/newpoint", {}, JSON.stringify(pt));
+                    stompClient.send("/app/newpoint", {}, JSON.stringify(pt));
                 });
             }
 
@@ -91,7 +121,7 @@ var app = (function () {
                 can.addEventListener("pointerdown", function(event){
                     var pt = getMousePosition(event);
                     addPointToCanvas(pt);
-                    stompClient.send("/topic" + topic, {}, JSON.stringify(pt));
+                    stompClient.send("/app" + topic, {}, JSON.stringify(pt));
                 });
             }
         }
